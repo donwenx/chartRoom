@@ -20,7 +20,7 @@
         聊天室 —— {{ user.name }}
       </div>
       <div class="chat-room">
-        <div class="chat-room-list">
+        <div v-if="info.length !== 0" class="chat-room-list">
           <div class="chat-room-item" v-for="item in info" :key="item.id">
             <div class="chat-room-item-avatar">
               <img :src="item.avatar" alt="">
@@ -35,9 +35,10 @@
             </div>
           </div>
         </div>
+        <div v-else>暂无聊天内容</div>
       </div>
       <div class="input-box">
-        <a-input class="input" v-model:value="input" placeholder="Basic usage">
+        <a-input class="input" v-model:value="input" placeholder="平等表达，友善交流">
         </a-input>
         <a-button class="btn" type="primary" @click="onClickInput">发送</a-button>
       </div>
@@ -46,6 +47,8 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
+import { message } from 'ant-design-vue';
+const [messageApi] = message.useMessage();
 
 interface User {
   id: string;
@@ -61,41 +64,58 @@ interface Info {
 }
 
 // 聊天信息
-const info = ref<Info[]>([
-  { id: '01', name: '汤姆猫01', avatar: 'avatar/02.png', time: '2024-1-16', message: 'hi!' },
-  { id: '02', name: '杰克01', avatar: 'avatar/01.png', time: '2024-1-16', message: 'xxxxxxxxxxxxxx' },
-  { id: '02', name: '杰克01', avatar: 'avatar/01.png', time: '2024-1-16', message: 'hi' },
-])
+const info = ref<Info[]>([])
 // 当前用户
-const user = ref({
-  id: '01',
-  name: '汤姆01'
+const user = ref<User>({
+  id: '',
+  name: '',
+  avatar: ''
 })
 // 在线人数
 const people = ref<User[]>([])
-people.value = info.value.filter((item, index, arr) => { 
-    return arr.findIndex(t => t.name === item.name) === index; 
-});
 
 const numPeople = ref<number>(0)
-numPeople.value = people.value.length
 const input = ref<string>('')
 
+// 点击发送
 const onClickInput = () => {
   if (input.value !== '') {
-    console.log('input:', input.value)
+    const data = {
+      ...user.value,
+      message: input.value,
+    }
+    // send 发送，需要把json转为字符串
+    ws.send(JSON.stringify(data))
     input.value = ''
   }
 }
+
 const ws = new WebSocket('ws://localhost:3000')
 ws.addEventListener('open', () => {
   console.log('连接上服务器')
   // send 发送数据
-  ws.send('来新订单了！')
+  // ws.send('来新订单了！')
 })
+
 // 收到的消息
 ws.addEventListener('message', ({ data }) => {
-  console.log(data)
+  const res = JSON.parse(data)
+  // console.log('res:',res.data)
+  // 用户列表
+  if (res.type === 'userList') {
+    numPeople.value = res.userCount
+    people.value = res.userList
+    console.log('当前在线人数' + numPeople.value)
+    messageApi.info('当前在线人数' + numPeople.value);
+  }
+  // 新增消息
+  if (res.type === 'message') {
+    info.value.push(res.data)
+  }
+  // 用户个人信息
+  if (res.type === 'user') {
+    user.value = res.userInfo
+  }
 })
 </script>
 <style scoped lang="less">
