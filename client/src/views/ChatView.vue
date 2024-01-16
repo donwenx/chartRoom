@@ -4,44 +4,34 @@
       <div class="l-menu-head">当前在线人数: {{ numPeople }}</div>
       <a-divider />
       <div class="l-menu-container">
-        <div class="l-menu-container-item" v-for="item in 22" :key="item">
-          <div class="l-menu-container-avatar">
-            <img src="../assets/avatar/02.png" alt="">
+        <div v-if="numPeople !== 0">
+          <div class="l-menu-container-item" v-for="item in people" :key="item.id">
+            <div class="l-menu-container-avatar">
+              <img :src="item.avatar" alt="">
+            </div>
+            <div class="l-menu-container-name">{{ item.name }}</div>
           </div>
-          <div class="l-menu-container-name">汤姆01 </div>
         </div>
+        <div v-else>暂无</div>
       </div>
     </div>
     <div class="content">
       <div class="content-head">
-        聊天室
+        聊天室 —— {{ user.name }}
       </div>
       <div class="chat-room">
         <div class="chat-room-list">
-          <div class="chat-room-item">
+          <div class="chat-room-item" v-for="item in info" :key="item.id">
             <div class="chat-room-item-avatar">
-              <img src="../assets/avatar/02.png" alt="">
+              <img :src="item.avatar" alt="">
             </div>
             <div class="chat-room-item-info">
               <div class="chat-room-item-user">
-                <div class="chat-room-item-user-name">汤姆猫01</div>
-                <div class="chat-room-item-user-time">2024-01-16</div>
+                <div class="chat-room-item-user-name">{{ item.name }}</div>
+                <div class="chat-room-item-user-time">{{ item.time }}</div>
               </div>
-              <div class="chat-room-item-message ">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Eaque et
-                dicta, consequuntur, ad, corrupti ea dolorem animi non sint ducimus quisquam voluptatum perferendis
-                provident hic molestiae sunt sequi voluptate! Eveniet.</div>
-            </div>
-          </div>
-          <div class="chat-room-item">
-            <div class="chat-room-item-avatar">
-              <img src="../assets/avatar/02.png" alt="">
-            </div>
-            <div class="chat-room-item-info">
-              <div class="chat-room-item-user">
-                <div class="chat-room-item-user-name">汤姆猫01</div>
-                <div class="chat-room-item-user-time">2024-01-16</div>
-              </div>
-              <div class="chat-room-item-message chat-room-item-message-active">hi!</div>
+              <div class="chat-room-item-message" :class="{ 'chat-room-item-message-active': item.id === user.id }">{{
+                item.message }}</div>
             </div>
           </div>
         </div>
@@ -57,15 +47,56 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+interface User {
+  id: string;
+  name: string;
+  avatar: string;
+}
+interface Info {
+  id: string;
+  name: string;
+  avatar: string;
+  time: string;
+  message: string;
+}
+
+// 聊天信息
+const info = ref<Info[]>([
+  { id: '01', name: '汤姆猫01', avatar: 'avatar/02.png', time: '2024-1-16', message: 'hi!' },
+  { id: '02', name: '杰克01', avatar: 'avatar/01.png', time: '2024-1-16', message: 'xxxxxxxxxxxxxx' },
+  { id: '02', name: '杰克01', avatar: 'avatar/01.png', time: '2024-1-16', message: 'hi' },
+])
+// 当前用户
+const user = ref({
+  id: '01',
+  name: '汤姆01'
+})
+// 在线人数
+const people = ref<User[]>([])
+people.value = info.value.filter((item, index, arr) => { 
+    return arr.findIndex(t => t.name === item.name) === index; 
+});
+
 const numPeople = ref<number>(0)
+numPeople.value = people.value.length
 const input = ref<string>('')
 
 const onClickInput = () => {
-  if(input.value !== '') {
+  if (input.value !== '') {
     console.log('input:', input.value)
     input.value = ''
   }
 }
+const ws = new WebSocket('ws://localhost:3000')
+ws.addEventListener('open', () => {
+  console.log('连接上服务器')
+  // send 发送数据
+  ws.send('来新订单了！')
+})
+// 收到的消息
+ws.addEventListener('message', ({ data }) => {
+  console.log(data)
+})
 </script>
 <style scoped lang="less">
 .chat {
@@ -232,4 +263,5 @@ const onClickInput = () => {
       }
     }
   }
-}</style>
+}
+</style>
