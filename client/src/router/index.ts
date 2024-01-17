@@ -3,13 +3,13 @@ import HomeView from '../views/HomeView.vue'
 import ChatView from '../views/ChatView.vue'
 
 const routes: Array<RouteRecordRaw> = [
+  // {
+  //   path: '/',
+  //   name: 'home',
+  //   component: HomeView
+  // },
   {
     path: '/',
-    name: 'home',
-    component: HomeView
-  },
-  {
-    path: '/chat',
     name: 'chat',
     component: ChatView,
   },
